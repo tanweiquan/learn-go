@@ -1,0 +1,1013 @@
+gin框架：用于处理请求
+MVC架构：
+               M: Models -->公共的控制器函数
+               V : Template -->模板文件
+               C : Controller -->控制器函数
+方便的热加载：获取：go get github.com/pilu/fresh
+                      执行：fresh
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门1（响应数据给前端）
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+type Article struct {
+	Title   string `json:"title"`
+	Desc    string `json:"desc"`
+	Content string `json:"content"`
+}
+
+func main() {
+
+	// 新建路由，默认使用了两个中间件
+	r := gin.Default()
+
+	// 加载要渲染的html文件(注意这里如果是绝对路径要看文件的位置要打开后的终端里显示所示文件在哪)
+	// 全部模板放在一个目录里的配置方法
+	r.LoadHTMLGlob("templates/*") //当该文件夹不在main包目录下时，也可以在main包和该文件夹公有的目录下运行main.go
+	// 使用"/"路由
+	r.GET("/", func(c *gin.Context) {
+		c.String(200, "值：%v\n", "首页") //响应string类型数据
+	})
+
+	// 使用"json1"路由
+	r.GET("/json1", func(c *gin.Context) {
+		c.JSON(200, map[string]interface{}{
+			//key - value
+			"success": true,
+			"msg":     "你好，gin",
+		}) //响应string类型数据
+	})
+	// 使用"json2"路由
+	r.GET("/json2", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			// key - value
+			"success": true,
+			"msg":     "你好，gin",
+		}) // 响应json类型数据
+	})
+	// 使用"json3"路由
+	r.GET("/json3", func(c *gin.Context) {
+		a := &Article{
+			Title:   "我是一个标题",
+			Desc:    "描述",
+			Content: "测试内容",
+		}
+		c.JSON(200, a) // 响应json类型数据
+	})
+	// 使用"jsonp"路由
+	r.GET("/jsonp", func(c *gin.Context) {
+		a := &Article{
+			Title:   "我是一个标题",
+			Desc:    "描述",
+			Content: "测试内容",
+		}
+		// 响应jsonp请求(主要用来解决跨域问题的)
+		// 127.0.0.1:8080/jsonp?callback=xxxx
+		// 响应xxxx({"title":"我是一个标题","desc":"描述","content":"测试内容"});
+		c.JSONP(200, a)
+	})
+	// 使用"xml"路由
+	r.GET("/xml", func(c *gin.Context) {
+		a := &Article{
+			Title:   "我是一个标题",
+			Desc:    "描述",
+			Content: "测试内容",
+		}
+		/* 响应请求：
+		<Article>
+		    <Title>我是一个标题</Title>
+		    <Desc>描述</Desc>
+		    <Content>测试内容</Content>
+		</Article>
+		*/
+		c.XML(200, a) //响应xml类型数据
+	})
+	// 使用"news"路由
+	r.GET("/news", func(c *gin.Context) {
+		// 渲染前要配置模板：r.LoadHTMLGlob("templates/*")
+		c.HTML(200, "news.html", gin.H{
+
+			// 假如前台的html有<h2>{{.title}}</h2>
+			"title": "我是后台的数据", // 这些数据是后台业务逻辑里面的，就可以渲染了html里的`.title`
+
+		}) //响应html数据来渲染html文件（即将后端的业务逻辑的数据传入这个html文件中）
+	})
+	// 使用"goods"路由
+	r.GET("/goods", func(c *gin.Context) {
+		a := &Article{
+			Title:   "商品标题",
+			Desc:    "描述",
+			Content: "商品内容",
+		}
+		c.HTML(200, "goods.html", gin.H{
+
+			// 假如前台的html有<h2>{{.title}}</h2>
+			"title": "我是后台的数据", // 这些数据是后台业务逻辑里面的，就可以渲染了html里的`.title`
+
+			// 假如前台的html有<h3>{{.price}}</h3>
+			"price": 20, // 这些数据是后台业务逻辑里面的，就可以渲染了html里的`.price`
+
+			// 假如前台的html有<h3>{{.goodsabout.Title}}</h3>和<h3>{{.a.Desc}}</h3>
+			"goodsabout": a,
+		}) //响应html数据来渲染html文件（即将后端的业务逻辑的数据传入这个html文件中）
+	})
+	//启动路由
+	_ = r.Run(":8000")
+
+}
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+type Article struct {
+	Title   string `json:"title"`
+	Desc    string `json:"desc"`
+	Content string `json:"content"`
+}
+
+func main() {
+
+	// 新建路由，默认使用了两个中间件
+	r := gin.Default()
+	// 文件模板不是放在同一个目录
+	// 加载模板html文件，要放在请求路由上面
+	r.LoadHTMLGlob("templates/**/*")
+	r.GET("/goods", func(c *gin.Context) {
+		a := &Article{
+			Title:   "这是goods的后台页面",
+			Desc:    "这是描述",
+			Content: "后台内容",
+		}
+		c.HTML(200, "admin/goods.html", gin.H{
+			"title":      "我是后台数据",
+			"price":      20,
+			"goodsabout": a,
+		})
+	})
+	//启动路由
+	_ = r.Run(":8000")
+}
+//gin模板常用：
+模板也要改（定义模板）：
+<!-- 在模板中开头要配置：{{define "模板所在目录/模板"}} ，结尾要配置{{end}} -->
+
+在模板中还可以定义变量：
+<body>{{$a:=.title}}</body>，然后使用：<body><h3>{{$a}}</h3></body>
+
+模板中条件判断：(下面的gt是比较函数，同样的还有:eq相等，ne不等，lt小于，le小于等于，gt大于，ge大于等于）
+                         <body>
+                                      {{if gt .score 90}} 
+                                                    <p>优秀</p>
+                                      {{else}}
+                                                    <p>不及格</p>
+                                      {{end}}
+                         </body>
+
+前台循环遍历数据：
+                         <body>
+                          	 <url>
+                                  {{range $key,$value:=.hobby}}
+                                       <li>({$key}}-----{$value}}-----{$value.Title}}</li>
+                                  {{else}}
+                                       <li>数组中没有数据</li>
+                                  {{end}}
+                                 </url>
+                         <body> 
+with解析结构体：
+原来我们这样：{{.news.Title}}和{{.news.Content}}
+使用with后：{{with .news}}
+                            {{.Title}}
+                            {{.Content}}
+                    {{end}}
+
+去除空格：{{- .Name -}}
+
+预定义函数
+and
+函数返回他的第一个empty参数或者最后一个参数
+就是说“and x y"等价于"if x then else x"：所有参数都会执行
+or
+返回第一个非empty参数或者最后一个参数；
+亦即"or x y"等价于"if x then else y"：所有的参数都会执行
+not
+返回它的单个参数的布尔值的否定
+len
+返回它的参数的整数类型长度，如：{{len .title}}
+index
+执行结果为第一个参数以剩下的参数为索引/键指向的值
+
+自定义模板函数r.SetFuncMap(template.FuncMap{"xxx":自定义的函数的函数名})，在后端代码中定义，要写在加载模板前，模板使用如：{{xxx .abc .efg}} 这里的abc 和efg为传入自定义模板函数的参数
+
+加载模板到另外一个模板(嵌套模板)：在一个模板下加载另一个模板：{{template "模板所在目录/模板名" .}}  注意这里有给个点"."
+//静态文件服务
+func main(){
+r:=gin.Default()
+// 配置静态web目录，此时html就可以从文件目录里找静态文件渲染，如在html中<link rel="stylesheet" href="/static/css/base.css>
+r.Static("/xxx","./static")//前面的参数是路由，后面的参数是静态文件夹的目录（如存放了js、css、images等文件的文件夹的大文件夹static）
+}
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门2（接收前端传来的数据）
+####################
+1、GET请求传值
+通过c.Query或者c.DefaultQuery接收前端传来的数据
+GET    /user?uid=20&page=1
+func main(){
+r:=gin.Default()
+r.GET("/user",func(c *gin.Context){
+uid:=c.Query("uid")
+page:=c.DefaultQuery("page","0") //0为默认值
+c.String(200,"uid=%v page=%v",uid,page) //响应接收并处理后的数据给前端
+})
+}
+####################
+2、POST请求传值 获取form表单数据
+通过c.PostForm接收表单传过来的数据
+
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+type Article struct {
+	Title   string `json:"title"`
+	Desc    string `json:"desc"`
+	Content string `json:"content"`
+}
+
+func main() {
+
+	// 新建路由，默认使用了两个中间件
+	r := gin.Default()
+	// 加载模板
+	r.LoadHTMLGlob("templates/**/*")
+	// 使用"news"路由
+	r.GET("/news", func(c *gin.Context) {
+		// 响应数据给前端
+		c.HTML(200, "default/user.html", gin.H{})
+	})
+                    /*如前端代码：
+	    <body>
+	    <form action="/doAddUser" method="post">
+	        用户名:<input type="text" name="username"/><br><br>
+	        密码:<input type="password" name="password"/><br><br>
+	        <input type="submit" value="提交">
+	    </form>
+	    </body>
+                    */
+	// post获取表单过来的数据
+	r.POST("/doAddUser", func(c *gin.Context) {
+		name := c.PostForm("username")
+		pwd := c.PostForm("password")
+		age := c.DefaultPostForm("age", "10") //后面指定默认值
+		// 响应数据给前端
+		c.JSON(200, gin.H{
+			"用户名": name,
+			"密码":  pwd,
+			"年龄":  age,
+		})
+	})
+	//启动路由
+	_ = r.Run(":8000")
+}
+#############################################
+// 3、获取 POST xml数据
+// 通过c.GetRawData获取xml数据
+package main
+
+import (
+	"encoding/xml"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Article struct {
+	Title   string `xml:"title"`
+	Content string `xml:"content"`
+}
+
+func main() {
+                  
+                // 如前端代码：
+                  <?xml version ="1.0" endcoding="UTF-8"?>
+                  <article>
+                           <content type = "string">我是张三</content>
+                           <title type = "string">张三</title>
+                  </article>
+	// 新建路由，默认使用了两个中间件
+	r := gin.Default()
+	// 获取POST xml数据
+	//当使用json和xml作为数据交互的格式时，这个时候可以在gin中使用c.GetRawData()获取数据
+	r.POST("/news", func(c *gin.Context) {
+		b, _ := c.GetRawData()
+		article := &Article{}
+		err := xml.Unmarshal(b, &article)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+		} else {
+			c.JSON(200, article)
+		}
+
+	})
+
+	//启动路由
+	_ = r.Run(":8000")
+}
+// 4、动态路由传值
+// 通过c.Param接收动态路由传来的数据
+例1：
+// /list/123/56 ，123赋值给了cid，56赋值给了nbc
+r.GET("/list/:cid/*nbc",func(c *gin.Context){
+    //获取动态路由的数据使用c.Param() 
+    id:=c.Param("cid")
+    name:=c.Param("nbc")
+    c.String(200,"%v,%v",id,name) 
+
+})
+例2：
+func main() {
+	router := gin.Default()
+
+	// 此 handler 将匹配 /user/john 但不会匹配 /user/ 或者 /user
+	router.GET("/user/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		c.String(http.StatusOK, "Hello %s", name)
+	})
+
+	// 此 handler 将匹配 /user/john/ 和 /user/john/send
+	// 如果没有其他路由匹配 /user/john，它将重定向到 /user/john/
+	router.GET("/user/:name/*action", func(c *gin.Context) {
+		name := c.Param("name")
+		action := c.Param("action")
+		message := name + " is " + action
+		c.String(http.StatusOK, message)
+	})
+
+	router.Run(":8080")
+}
+##########################################
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+type USerInfo struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+}
+
+func main() {
+
+	// 新建路由，默认使用了两个中间件
+	r := gin.Default()
+	// 加载模板
+	r.LoadHTMLGlob("templates/**/*")
+	// 获取 GET POST传递的数据绑定到结构体
+                // 使用"news"路由
+	r.GET("/news", func(c *gin.Context) {
+		// 响应数据给前端
+		c.HTML(200, "default/user.html", gin.H{})
+	})
+	// 1、获取GET请求传递的数据定到结构体
+	// 使用路由"goods"
+	// http://127.0.0.1:8000/goods?username=zhanshang&password=123
+	r.GET("/user1", func(c *gin.Context) {
+		user := &USerInfo{}
+		err := c.ShouldBind(&user) // 获取GET请求传递的数据绑定到结构体
+		if err != nil {
+			c.String(200, "err:%v\n", err.Error())
+		} else {
+			c.JSON(200, user)
+		}
+	})
+
+	// 2、获取POST请求传递的数据定到结构体
+	/*如前端代码：
+		<body>
+	    <form action="/doAddUser2" method="post">
+	        用户名:<input type="text" name="username"/><br><br>
+	        密码:<input type="password" name="password"/><br><br>
+	        <input type="submit" value="提交">
+	    </form>
+	    </body>
+	*/
+	r.POST("/doAddUser2", func(c *gin.Context) {
+		user := &USerInfo{}
+		err := c.ShouldBind(&user) // 获取GET请求传递的数据绑定到结构体
+		if err != nil {
+			c.String(400, "err:%v\n", err.Error())
+		} else {
+			c.JSON(200, user)
+		}
+	})
+	//启动路由
+	_ = r.Run(":8000")
+}
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+入门3 
+
+路由组：
+func main() {
+	r := gin.Default()
+
+	// 简单的路由组: v1
+	ad := r.Group("/v1")
+	{
+		ad.GET("/login", func(c *gin.Context){ // 127.0.0.1:8080/v1/login
+                                     c.String(200,"我是API接口v1-1")
+                                })
+		ad.GET("/submit", func(c *gin.Context){ // 127.0.0.1:8080/v1/submit
+                                     c.String(200,"我是API接口v1-2")
+                                })
+		ad.GET("/read", func(c *gin.Context){ // 127.0.0.1:8080/v1/read
+                                     c.String(200,"我是API接口v1-3")
+                                })
+	}
+
+	// 简单的路由组: v2
+	as := r.Group("/v2")
+	{
+		as.POST("/login", func(c *gin.Context){ // 127.0.0.1:8080/v1/login
+                                     c.String(200,"我是API接口v2-1")
+                                })
+		as.POST("/submit", func(c *gin.Context){ // 127.0.0.1:8080/v1/submit
+                                     c.String(200,"我是API接口v2-2")
+                                })
+		as.POST("/read", func(c *gin.Context){ // 127.0.0.1:8080/v1/read
+                                     c.String(200,"我是API接口v2-3")
+                                })
+	}
+
+	r.Run(":8080")
+}
+路由的抽离：
+在项目的根目录为路由组创建文件夹routers，下面分别创建ad.go和as.go 等多个.go文件的包名都是routers
+在.go文件中自定义首字母大写的函数，分别传入参数r，参数类型为*gin.Engine，然后就可以在自定义函数中配置路由组了。如：
+func Admin(r *gin.Engine){
+admin:=r.Group("/v1")
+admin.GET("/user",func(c *gin.Context){ 
+      c.String(200,"我是API接口v1-1")
+})
+当需要调用路由组时，引入包后，直接在main.go传参调用函数就可以，如：Admin(r)
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门4：
+
+控制器的抽离：
+方法一：
+在项目的根目录创建文件夹controllers，下面分别创建前端，api，后台的文件夹，在文件夹中，创建xxxController.go文件，在.go文件中，使用.go文件所在目录名为包名，然后将业务处理的函数自定义好（可定义多个函数），如
+package admin
+import "xxx-xxx"	
+func Add(c *gin.Context){
+c.String(200,"成功")
+}
+当需要在路由组文件的.go中调用时，要使用时，使用包名.函数名即可，注意这时不要使用括号。如：r.GET("/user",admin.Add)
+
+方法二：（推荐的，可以实现继承多个方法）
+在原来的基础上，在.go文件中定义一个结构体，绑定这些方法，从而实现继承操作，如
+package admin
+import "xxx-xxx"
+type Tying struct{ // 注意这里结构体名首字母要大写
+          Add // 这里继承了外部的公共方法：Add方法
+} 
+func (conn Tying)Edit(c *gin.Context){
+c.String(200,"成功")
+conn.Add(c) // 这里体现的继承的特性
+}
+当需要在路由组文件的.go中调用时，就使用包名.结构体名.函数名，如：：r.GET("/user",admin.Tying.Edit)
+################################
+gin中自定义Model：
+关于Model：如果我们有一个功能想在多个控制器、或者多个模板里面复用的话，那么我们可以把公共的功能单独抽取出来作为一个模快（Model）。
+一般我们会在Model里封装一些公共的方法让不同的控制器controllers使用，也可以在Model中实现和数据库打交道。
+我们可以在根目录创建文件夹controllers，在该文件夹下又新建models文件夹，在里面创建多个不同的xx.go文件，然后在这些.go文件里创建公共的方法，且使用models的包名，从而实现Model的封装，调用方法为：models.函数名
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门5：
+
+中间件：gin允许开发者处理请求时，加入用户自己的钩子函数(Hook)。这个钩子函数就叫中间件。中间件适合用于处理一些公共的业务逻辑，比如登录认证、权限校验、数据分页、记录日志、耗时统计等。
+简单来说：中间件就是匹配路由前和匹配路由完成后执行的一系列操作。（最后一个func回调函数前触发的方法都可以称为中间件。）
+1、gin中的中间件必须是gin.HandlerFunc类型，匹配路由的时候可以传递多个func回调函数，最后一个func回调函数前触发的方法都可以称为中间件。
+2、中间件里面加上c.Next()可以让我们在路由匹配完成后执行一些操作。（c.Next()调用该请求的剩余处理程序）
+3、c.Abort()表示终止该请求的剩余处理程序，也就是说会终止本中间件后面的func(c *gin.Context){}函数
+############################################
+//路由中间件：
+路由中间件1：
+package main
+
+import (
+	"fmt"
+                 
+	"github.com/gin-gonic/gin"
+)
+func main() {
+
+	// 新建路由
+	r := gin.Default()
+	r.GET("/", func(c *gin.Context) {         // func(c *gin.Context){}这个函数可以称之为中间件（先执行）
+		 fmt.Println( "这是一个路由中间件") 
+	}, func(c *gin.Context) {                    // 后执行
+		c.String(200, "gin首页")
+	})
+	//启动路由
+	_ = r.Run(":8000")
+}
+
+路由中间件2：（在外部定义）
+package main
+
+import (
+	"fmt"
+                 
+	"github.com/gin-gonic/gin"
+)
+                // 定义了中间件
+                func initMiddleware(c *gin.Context){          
+                              fmt.Println( "这是一个路由中间件1") 
+                // 调用该请求的剩余处理程序
+                              c.Next()    // 调用c.Next()后，会执行完本中间件后面的func(c *gin.Context) {}函数后，再执行本中间件的c.Next()下面的这些代码
+                              fmt.Println( "这是一个路由中间件2") 
+                }
+func main() {
+                // 新建路由
+	r := gin.Default()
+                r.GET("/", initMiddleware, func(c *gin.Context) {   // 使用中间件
+                               fmt.Println( "首页") 
+	               c.String(200, "gin首页")
+                })
+}
+// 看打印顺序：这是一个路由中间件1-->首页-->这是一个路由中间件2
+使用实例1：
+package main
+
+import (
+	"fmt"
+                 
+	"github.com/gin-gonic/gin"
+)
+                // 定义了中间件
+                func initMiddleware(c *gin.Context){          
+                              start := time.Now().UnixNano()
+                // 调用该请求的剩余处理程序
+                              c.Next()
+                              end := time.Now().UnixNano()    
+                              fmt.Println(end-start)      // 打印请求处理过程的耗时
+                }
+func main() {
+                // 新建默认路由
+	r := gin.Default()
+                r.GET("/", initMiddleware, func(c *gin.Context) {   // 使用中间件
+                               time.Sleep(time.Second) // 这里只是为了演示中间件的耗时，这个过程可用于数据库的连接之类的操作
+	               c.String(200, "gin首页")
+                })
+}
+如果一个路由里有多个中间件，且每个中间件都有c.Next()，那么他们执行剩余程序的顺序是从后向前执行的。如：r.GET("/",fA,fB,func(c *gin.Context){}) ，它的执行执行顺序是fA(c.Next()前的代码)->fB(c.Next()前的代码)->func->fB(c.Next()后的代码)->fA(c.Next()后的代码)
+############################################
+//全局中间件（一次性配置多个路由中间件）
+使用r.Use()来设置全局中间件
+如：
+                   // 新建默认路由
+                   r:=gin.Default()
+                   // 全局中间件
+                   r.Use(add,edit)
+                   // 使用"/"路由
+                   r.GET("/",func(c *gin.Context){})
+设置了add和edit两个全局中间件，执行顺序也跟路由中间件一样，即：add(c.Next()前的的代码)->edit(c.Next()前的的代码)->func->edit(c.Next()后的的代码)->add(c.Next()后的的代码)
+############################################
+// 在路由分组中配置中间件
+方法：先在项目的根目录下新建一个文件夹middlewares，在这个文件夹里配置中间件的.go文件，包名就用.go文件所在文件夹的目录名，引入gin包后，就可以配置中间件函数了，调用中间件时，也是用包名.函数名调用
+为路由组注册中间件有两种方法
+1、直接在路由组中配置中间件：
+                func Add(r *gin.Engine){
+                      add:=r.Group("/v1",xxx.yyy,aaa.bbb)  // 这里yyy、bbb为外部定义的中间件<----在这里定义中间件
+                {
+                         add.GET("/",func(c *gin.Context){})
+                         add.GET("/",func(c *gin.Context){})
+                         add.GET("/",func(c *gin.Context){})
+                }
+                }
+
+2、使用路由组传入的路由配置中间件：
+                func Edit(r *gin.Engine){
+                      edit:=r.Group("/v1") 
+                      edit.Use(xxx.yyy,aaa.bbb)  // 这里yyy、bbb为外部定义的中间件<----在这里定义中间件
+                {
+                         
+                         edit.GET("/",func(c *gin.Context){})
+                         edit.GET("/",func(c *gin.Context){})
+                         edit.GET("/",func(c *gin.Context){})
+                }
+                }
+############################################ 	 	
+// 中间件和另一个中间件，或中间件和对应的控制器之间共享数据 
+
+在中间件函数中设置值：
+c.Set("username","张三")
+
+在另一个中间件函数中或者控制器函数中获取值：
+username,_:=c.Get("username")
+
+// gin中间件函数或者控制器函数handler中使用goroutine
+当在中间件或handler中启动新的goroutine时，不能使用原始的上下文（c *gin.Context），必须使用其副本xxx:=c.Copy()
+如：定义一个使用goroutine的控制器路由
+                     r.GET("/",func add(c *gin.Context{
+                              abc:=c.Copy() // 使用副本
+                              // 统计日志
+                              go func(){      // 使用goroutine
+                                    time.Sleep(2*time.Second)
+                              // 这里使用你创建的副本
+                                    fmt.Println("Done! in path",abc.Request.URL.Path)
+                               }()
+                              c.String(200,"首页")
+                     })
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门6：
+
+gin文件上传（单文件上传和多文件上传，区别在于是单个文件逐个上传，还是多个文件一起上传）
+1、单文件：
+#首先要定义模板
+我们要在form表单上加上enctype="multipart/form-data"
+如：<body>
+                 <form action="/admin/user/doAdd" method="post" enctype="multipart/form-data">
+                           用户名：<input type="text" name="username" placeholder="用户名"><br> <br>
+                              头像：<input type="file" name="face"><br> <br>
+                         <input type="submit" value="提交">
+                 </form>
+       </body>
+#然后在业务逻辑里
+func main() {
+	r := gin.Default()
+                
+	// 为 multipart forms 设置较低的内存限制 (默认是 32 MiB)
+	r.MaxMultipartMemory = 8 << 20  // 8 MiB
+                // 前端发送GET请求获得页面
+                r.GET("/admin/user",func(c *gin.Context){
+                             c.HTML(200,"default/user.html",gin.H{})
+                })
+                // 前端发送POST请求，发送文件
+	r.POST("/admin/user/doAdd", func(c *gin.Context) {
+		// 单文件
+		file, _ := c.FormFile("file")
+                                // 获取前端传来的文件的文件名
+		log.Println(file.Filename) // file.Filename获取文件名称
+
+                                // 上传的文件保存至指定目录，一般是放在静态文件夹static目录下的新建文件夹
+                                // 例如要保存的路径为：./static/upload/xxx.jpg
+                                dst:= path.Join("./static/upload",file.Filename)
+		c.SaveUploadedFile(file, dst) // 这里参数的file是前面的变量file，后面的dst是保存的路径
+                                // 返回的页面发送文件成功的字符串
+		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+	})
+	r.Run(":8080")
+}
+################################
+2、多文件上传 
+2.1不同名字的多个文件上传	
+#首先要定义模板
+我们要在form表单上加上enctype="multipart/form-data"
+如：<body>
+                 <form action="/admin/user/doAdd" method="post" enctype="multipart/form-data">
+                           用户名：<input type="text" name="username" placeholder="用户名"><br> <br>
+                             头像1：<input type="file" name="face1"><br> <br>
+                             头像2：<input type="file" name="face2"><br> <br>
+                         <input type="submit" value="提交">
+                 </form>
+       </body>
+#然后在业务逻辑里
+func main() {
+	r:= gin.Default()
+	// 为 multipart forms 设置较低的内存限制 (默认是 32 MiB)
+	r.MaxMultipartMemory = 8 << 20  // 8 MiB
+                // 前端发送GET请求获得页面
+                r.GET("/admin/user",func(c *gin.Context){
+                             c.HTML(200,"default/user.html",gin.H{})
+                })
+	r.POST("/admin/user/doAdd", func(c *gin.Context) {
+                                // 获取表单数据
+                                username:=c.PostForm("username")
+		// 文件01
+		face1,err1:=c.FormFile("face1")
+                                
+                                // 上传的文件保存至指定目录，一般是放在静态文件夹static目录下的新建文件夹
+                                // 例如要保存的路径为：./static/upload/xxx.jpg
+                                dst1:= path.Join("./static/upload",file.Filename)
+                                if err1 == nil{
+                                            c.SaveUploadedFile(face1, dst1) // 这里参数的face1是前面的变量face1，后面的dst1是保存的路径
+                                }
+		// 文件02
+		face2,err2:=c.FormFile("face2")
+		 dst2:= path.Join("./static/upload",file.Filename)
+                                if err2 == nil{
+                                            c.SaveUploadedFile(face2, dst2) // 这里参数的face1是前面的变量face1，后面的dst1是保存的路径
+                                }
+                                // 在页面返回JSON数据，表明上传成功
+		c.JSON(http.StatusOK, gin.H{
+                                   "successs":      true,
+                                   "username":    username,
+                                   "dst1":             dst1,
+                                   "dst2":             dst2,
+                                })
+	})
+	r.Run(":8080")
+}
+-----------------------------------------------------
+2.2相同名字的多个文件上传
+#首先要定义模板
+我们要在form表单上加上enctype="multipart/form-data"
+如：<body>
+                 <form action="/admin/user/doAdd" method="post" enctype="multipart/form-data">
+                           用户名：<input type="text" name="username" placeholder="用户名"><br> <br>
+                             头像1：<input type="file" name="face[]"><br> <br>
+                             头像2：<input type="file" name="face[]"><br> <br>
+                             头像3：<input type="file" name="face[]"><br> <br>
+                         <input type="submit" value="提交">
+                 </form>
+       </body>
+#然后在业务逻辑里
+func main() {
+	r:= gin.Default()
+	// 为 multipart forms 设置较低的内存限制 (默认是 32 MiB)
+	r.MaxMultipartMemory = 8 << 20  // 8 MiB
+                // 前端发送GET请求获得页面
+                r.GET("/admin/user",func(c *gin.Context){
+                             c.HTML(200,"default/user.html",gin.H{})
+                })
+	r.POST("/admin/user/doAdd", func(c *gin.Context) {
+		// c.MultipartForm()获取表单form
+		form, _ := c.MultipartForm()
+                                // 获取到文件
+		files := form.File["face[]"]
+
+		for _, file := range files {
+		          log.Println(file.Filename)
+                                          // 上传的文件保存至指定目录，一般是放在静态文件夹static目录下的新建文件夹
+                                          // 例如要保存的路径为：./static/upload/xxx.jpg
+                                          dst:= path.Join("./static/upload",file.Filename)
+		          // 上传文件至指定目录
+		          c.SaveUploadedFile(file, dst)
+		}
+		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+	})
+	r.Run(":8080")
+}
+/*
+     1、获取上传文件
+      file,err:=c.FormFile("xxx")
+     2、获取后缀名，判断类型是否正确 （.jpg、.png、.gif、.jpeg）
+     extName := path.Ext(file.Filename)
+     allowExtMap := map[string]bool{
+              ".jpg"  :  true,
+              ".png" :  true,
+              ".gif"   :  true,
+              ".jpeg"  :  true,
+     }
+     // 判断类型是否合法
+     _,ok := allowExtMap[extName]
+     if !ok{
+          c.String(200,"上传的文件类型不合法")
+          return
+     }
+     3、创建图片保存目录 如：static/upload/20220311
+     day := modles.GetDay() // 这里使用公有的控制器里的方法来获取年月日：func GetDay() string{ template := "20060102";return time.Now().Format(template)}
+     dir :="./static/upload/"+day
+     err := os.MkdirAll(dir,0666) // 这里0666表示所有者所有组合其他人对这个目录都有读和写的权限
+     if err != nil{
+         fmt.Println(err)
+         c.String(200,"MkdirAll失败")
+         return
+     }
+     4、生成文件名称和文件保存的目录
+     unix := modles.GetUnix(){} // 这里使用公有的控制器中的方法来获取时间戳：func GetUnix() int64{return time.Now().Unix()}
+     fileName := strconv.FormatInt(unix,10) + extName // 将unix的int64类型转化为string类型，后面的参数10是十进制
+     
+     5、执行上传
+     dst := path.Join(dir,fileName)
+     c.SaveUploadedFile(file,dst) // 前面的file就是用来获取上传文件的变量file，后面就是文件名
+*/
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+入门7：
+
+###HTTP是无状态协议。简单地说，当你浏览了一个页面，然后转到同一个网站的另一个页面，服务器无法认识到这是同一个浏览器在访问同一个网站。每一次访问，都是没有任何关系的。如果我们要实现多个页面之间共享数据的话，我们就可以使用Cookie或者Session实现。
+
+#cookie是储存于访问计算机的浏览器中。可以让我们用同一个浏览器访问同一个域名的时候共享数据。
+ // 要在同一个主路由下的不同控制器或中间件中设置和获取Cookie，一个函数设置，另一个函数获取，这是主路由下的分路由都能获取设置的Cookie
+￥设置和获取Cookie
+       &设置Cookie
+                    c.SetCookie(name,value string,maxAge int,path,domain string,secure,httpOnly bool)
+第一个参数 key ----------------Cookie的名称
+第二个参数 value --------------Cookie的值 设为空" "，表示删除Cookie
+第三个参数 maxAge -----------Cookie的过期时间（秒）设为大于0表示要设置过期时间，设为等于0表示不设置过期时间，设为小于0表示要删除Cookie
+第四个参数 path ---------------Cookie的生效的路径（路由），默认是要使用"/"，表示在当前的整个网站里都有效
+第五个参数 domain ------------Cookie的域，后面要设置，本机的本地就是localhost
+第六个参数 secure -------------Cookie是否是安全的，也就是说是否只有在HTTPS协议下才生效。设置为true，则在HTTP中是无效的，在HTTPS中才生效。
+第七个参数 httpOnly -----------Cookie是否允许前端来操作，如果设置为true，则通过程序（js脚本、applet等）将无法读取到Cookie信息，防止XSS攻击产生。
+      &获取Cookie
+                    cookie,err:=c.Cookie("name")
+-------------------------------------------------------------
+#多个二级域共享Cookie
+1、分别把a.xxx.com和b.yyy.com解析到我们服务器（我们希望这两个网址可以共享我们的Cookie）
+2、我们想的是用户在a.xxx.com中设置Cookie信息后在b.yyy.com中获取刚才设置的Cookie,也就是实现多个二级域名共享Cookie
+这个时候的话我们就可以这样设置Cookie（去掉a，留下.xxx.com）
+c.SetCookie("username","value123",360,"/",".xxx.com",false,true)
+
+##########################################################
+
+￥Session是另一种记录客户状态的机制，不同的是Cookie保存在客户端浏览器中，而Session保存在服务器上。
+Session的工作流程：
+当客户端浏览器第一次访问服务器并发送请求时，服务器会创建一个session对象，生成一个类似key-value的键值对，然后将value保存到服务器，将key(Cookie)返回浏览器(客户端)。浏览器下次访问时会携带key(Cookie)，找到对应的Session(value)。
+
+// gin官方没有提供Session相关的文档，这个时候，我们可以使用第三方的Session中间件来实现。
+        github.com/gin-contrib/sessions     <-----使用go get下载这个就包含下面的了
+// 配置使用Session时要引入上面两个包
+gin-contrib/sessions中间件支持的存储引擎：cookie-based、Redis、memcached、Mongodb、memstore
+
+// 1、引入两个包："github.com/gin-contrib/sessions" 
+                            "github.com/gin-contrib/sessions/cookie"
+// 2、配置中间件：
+     // 创建基于 Cookie 的存储引擎store；secret参数是用于加密的密钥key，任意设置即可。
+     store := cookie.NewStore([]byte("secret"))
+     // 配置session的中间件
+     // 参数mysession指的是session的名字，也是cookie的名字；参数store是前面创建的存储引擎，我们可以替换成其他存储引擎
+     r.Use(sessions.Sessions("mysession",store))
+
+// 3、在控制器里面，设置和获取Session
+      ￥创建Session:
+                    session := sessions.Default(c)
+      ￥设置Session的过期时间：
+                    session.Options(sessions.Options{MaxAge: 3600*6}) // 单位为秒
+      ￥设置并保存Session:
+                    session.Set("username","value123")
+                    session.Save()
+       $获取Session:
+                    session := sessions.Default(c)
+                    username := session.Get("username")
+-----------------------------------------------------
+当我们需要把程序部署到多台服务器上时（例如：路由1在服务器1上，路由2在服务器2上），我们可以用redis来处理Session，从而实现Session的共享。
+// 这里跟上面不同就只有存储引擎不同，要重新设置一下存储引擎；Session的设置和获取是跟上面一样的设置和获取的
+// 1、引入两个包："github.com/gin-contrib/sessions"
+                              "github.com/gin-contrib/sessions/redis"
+// 2、配置中间件：
+     // 创建基于 redis 的存储引擎store
+     // 参数中10是连接数；"tcp"是网络协议；"localhost:6379"是地址和端口；"123"是连接redis的密码，可不使用，设为""；[]byte("secret")是用于加密的密钥key，任意设置即可。
+     store := redis.NewStore(10,"tcp","localhost:6379","123",[]byte("secret"))  
+     
+     // 参数mysession指的是session的名字，也是存储到reids里的cookie的名字；参数store是前面创建的存储引擎，我们可以替换成其他存储引擎
+     r.Use(sessions.Sessions("mysession",store))
+// 3、在控制器里面，设置和获取Session
+      ￥创建Session:
+                    session := sessions.Default(c)
+      ￥设置Session的过期时间：
+                    session.Options(sessions.Options{MaxAge: 3600*6}) // 单位为秒
+      ￥设置并保存Session:
+                    session.Set("username","value123")
+                    session.Save()
+       $获取Session:
+                    session := sessions.Default(c)
+                    username := session.Get("username")
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ 
+入门8：
+
+gin中使用GORM操作mysql数据库
+1、GORM 简单介绍:
+GORM是Golang的一个orm框架。简单说，GORM就是通过实例对象的语法，完成关系型数据库的操作的技术，是”对象-关系映射“的缩写。使用ORM框架可以让我们更方便的操作数据库。
+GORM官方支持的数据库类型有：mysql、postgresql、sqlite、sql server
+
+2、安装
+go get -u gorm.io/gorm
+go get -u gorm.io/driver/sqlite
+// 在控制器里使用db对象来操作数据库，在models里创建core.go文件，并在里面定义公有的方法作为控制器来使用
+3、连接到数据库 (教程：https://gorm.io/zh_CN/docs/connecting_to_the_database.html)
+以MySQL为例:
+                 import (
+                   "gorm.io/driver/mysql"
+                   "gorm.io/gorm"
+                 )
+                // 定义全局的DB来操作数据库
+                var DB *gorm.DB
+                var err error
+                // 设置init()，当在其他模块引入这个models时，自动连接数据库了
+                func init() {
+                        // 前面的root和123456是mysql连接时的用户名和密码，dbname为要操作的数据库名字
+                        dsn := "root:123456@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+                        DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+                        if err != nil{
+                              fmt.Println(err)
+                        }
+                }
+4、使用DB来操作数据库
+###实际项目中定义数据库模型注意以下几点：
+1、结构体的名称必须首字母大写，并和数据库表名称对应。例如：表名称为user，其结构体名称定义为User，表名称为article_cate，其结构体名称定义为ArticleCate。
+2、结构体中的字段名称首字母必须大写，并和数据库表中的字段一一对应。例如：下面结构体中的Id和数据库表中的id对应，Username和数据库表中的username对应，Age和数据库表中的age对应，Email和数据库表中的email对应，AddTime和数据库表中的add_time字段对应。
+3、默认情况表名是结构体名称的复数形式。如果我们的结构体名称定义为User，表示这个模型默认操作的是users表。
+4、我们可以使用结构体中的自定义方法TableName改变结构体的默认表名称，如下：
+          func (User) TableName() string{
+                     return "user"
+          }
+-----------------------------------------------------
+首先我们要在models中，创建.go文件（文件名称建议跟数据库里里的表名称统一起来），并定义一些公有的方法来操作数据库
+然后我们在这个.go文件中：
+      package models
+      // 定义操作数据库表的结构体，实现对象和关系的映射
+      type User struct{      // 默认操作表名是`users`的表，操作结构体相当于操作表
+                 Id                int                \	
+                 Username  string               \
+                 Age            int                    }------->这些字段要跟表中的字段一致
+                 Email         string               /
+                 AddTime   int                  /
+      }
+    // 表示配置操作数据库的表名称 
+    func (User) TableName()string{ 
+                return "user"      // 这里将结构体User默认的表名修改为user
+    }
+// 在控制器的方法中：（GORM的语法：https://gorm.io/zh_CN/docs/index.html）
+// GORM查询表：
+例1：查询全部记录
+          // 实例化结构体，获取数据库表，并赋值给userList
+               userList:= []models.User{}
+
+         // 拿到核心core.go中的DB对象，解析变量，并获取全部记录并返回给userList
+             models.DB.find(&userList)  // 这里将查询的数据返回给userList
+
+         // 返回数据给页面
+             c.JSON(200,"userList")
+例2：查询age大于20的用户
+       // 实例化结构体，获取数据表，并赋值给userList
+       userList := []models.User{}
+       models.DB.Where("age>20").Find(&userList)
+       c.JSON(200,userList)
+----------------------------------------------
+// GORM增加数据进表中：
+         // 定义结构体
+         user :=User{
+                Id :              123
+                Username: "zhangshan",
+                Age :           18, 
+                Email :        "xxxx@yy.com"
+                AddTime :    20220311,
+        }
+        // 创建user表
+        models.DB.Create(&user)
+        // 打印user
+        fmt.Println(user)
+        // 返回页面
+        c.String(200,"增加数据成功")
+-----------------------------------------
+// GORM更新(修改)表中的数据：
+      // 查询Id等于6的数据
+方法1（推荐使用）：  
+       // 实例化结构体，获取Id等于6的行
+       user := models.User{Id : 6} 
+       models.DB.Find(&user)
+       // 更新(修改)数据 
+       user.Username = "哈哈哈"       // 修改结构体的字段Username
+       user.Email = "yyyy@cc.com"   // 修改结构体的字段Email
+       // 保存数据到表中
+       models.DB.Save(&user)   // Save 会保存所有的字段，即使字段是零值
+       // 返回页面
+       c.String(200,"增加数据成功")
+方法2：
+        // 下面使用更新单列的方法，另外还可以使用更新多列的方法
+        // 获取表中全部数据
+        user := models.User{}
+        models.DB.Model(&user).	Where("id = ?",6).Update("username","哈哈哈")
+       // 返回页面
+       c.String(200,"增加数据成功")
+方法3：
+      // 这个方法结合上面两种的方法
+      // 实例化结构体，获取表中全部数据
+        user := models.User{}
+        models.DB.Model(&user).	Where("id = ?",6).Find(&user)
+       // 更新(修改)数据 
+       user.Username = "哈哈哈"       // 修改结构体的字段Username
+       user.Email = "yyyy@cc.com"   // 修改结构体的字段Email
+       // 保存数据到表中
+       models.DB.Save(&user)   // Save 会保存所有的字段，即使字段是零值
+       // 返回页面
+       c.String(200,"增加数据成功")
+-------------------------------------------
+// GORM删除表中的数据：
+方法1：
+      // 实例化结构体，获取表中的id等于6数据
+      user := models.User{Id: 6}
+      // 删除该数据
+      models.DB.Delete(&user)
+      c.String(200,"删除数据成功")
+方法2：
+      // 获取表中全部数据
+      user := models.User{}
+      // 删除指定条件的数据
+      models.DB.Where("id = ?",6).Delete(&user)
+
+
