@@ -2,11 +2,11 @@ package main
 
 import "fmt"
 
-//go语言中为了处理非ASCII码类型的字符，定义了新的rune类型
+//go语言中为了处理非ASCII码类型的字符，定义了新的文字编码规则unicode
 func main() {
 	s := "hello沙河"
-	n := len(s)    //len求的是ASCII字符的个数或字节长度
-	fmt.Println(n) //打印结果是11，英文字符是ASCII字符，沙河是汉字，汉字统计的是汉字字节，所以是5+6=11
+	n := len(s)    //len求的是字节数量
+	fmt.Println(n) //打印结果是11，英文字符是在使用UTF-8中使用的是ASCII字符编码，沙河是汉字，汉字统计的是汉字字节，所以是5+6=11
 	str := "abc"
 	for i := 0; i < len(str); i++ { //通过for打印每个字符
 		fmt.Printf("str[%d]=%c\n", i, str[i])
@@ -14,7 +14,7 @@ func main() {
 	for _, c := range s { //从字符串中拿出具体的字符
 		fmt.Printf("%c\n", c) //%c是字符
 	}
-	//字符串修改，
+	//字符串修改
 	s2 := "白萝卜"      //['白''萝''卜']
 	s3 := []rune(s2) //把字符串强制转换成rune切片
 	s3[0] = '红'
