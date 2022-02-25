@@ -56,7 +56,7 @@ func main() {
 	fmt.Println(strings.LastIndex(ss2, "b")) //子串最后出现的位置
 	//拼接
 	fmt.Println(strings.Join(f, "+")) //用+拼接起来,变成了"F:+WeChat+locales"
-	//len求的是ASCII字符的个数或字节长度,求字符不能用len直接求汉字字符的数量，否则求得的是汉字字节数量。
+	//len计算字符串字节数
 	n := "hello,流沙河"
 	//求得汉字字节长度，5+1+9,字节的数量是：英文5个，英文符号1个，中文字符9个，共15个
 	n1 := len(n) //求字符串n的长度，并把长保存到n1中
