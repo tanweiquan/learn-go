@@ -1,0 +1,69 @@
+代理模式
+在不改变原始类代码的情况下，通过引入代理类来给原始类提供附加功能。
+YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+
+静态代理
+基于接口而非实现编程，代理类通过实现和原始类相同的接口或者是继承相同的父类，再将原始类进行替换。
+
+静态代理主要的问题在于如果需要添加附加原始类过多，那么会导致项目中类的个数成倍增加，势必会增加代码的维护成本，而且每个代理类的代码都有重复的部分，也增加了不必要的开发成本，这个时候我们可以考虑使用动态代理。
+
+// 定义一个接口
+type IUserController interface {
+   Login(phone, password string) User
+   Register(phone, password string) User
+}
+// 定义一个原始类UserController
+type UserController struct{}
+// 原始类UserController只负责业务功能
+func (UserController) Login(phone, password string) User {
+   return User{}
+}
+func (UserController) Register(phone, password string) User {
+   return User{}
+}
+
+// 定义一个代理类UserControllerProxy继承了原始类UserController，且该原始类是实现了接口的接口类型
+// 代理类UserControllerProxy和原始类UserController都实现相同的接口IUserController
+type UserControllerProxy struct {           
+   userController IUserController   <---继承了原始类的方法
+}
+
+
+// 代理类UserControllerProxy负责在业务代码前后附加其他逻辑，并通过委托的方式调用原始类来执行业务代码   
+func (proxy UserControllerProxy) Login(phone, password string) User {
+   // 委托
+   user := proxy.userController.Login(phone, password)
+   // 省略代理实现的逻辑，如监控、统计、鉴权等操作
+   return user
+}
+
+func (proxy UserControllerProxy) Register(phone, password string) User {
+   user := proxy.userController.Register(phone, password)
+   return user
+}
+// 调用
+func main() {
+   var phone, password string
+   userController := UserControllerProxy{userController: new(UserController)}  <---使用代理类，代理类里使用new实例化对象
+   userController.Login(phone, password)  // 调用代理类的方法
+   userController.Register(phone, password)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,69 @@
+单例模式：
+一个类只允许创建唯一一个对象/实例
+唯一：这里指的是进程内唯一（意味着线程内和线程间都唯一），但进程间不是唯一的；
+【适合表示全局唯一类的场景，如系统的配置信息，以及处理资源访问冲突等（只有一个实例在工作，避免冲突问题）】
+#饿汉式     <----在类加载期间即完成实例的初始化，优点是线程安全，缺点是不支持延迟加载。
+type Singletion struct {}
+
+var single *Singletion
+
+func GetSingle() *Singletion {
+    return single
+}
+
+func init() {     <--------类加载期间就完成了初始化
+    single = new(Singletion)
+}
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+#懒汉式     <----就是在创建对象时比较懒，只有在需要时才会创建对象。相比饿汉式支持延迟加载，但他的实现方式会导致频繁地加锁、解锁，从而因并发度低产生性能问题
+type Singletion struct {}
+
+var mutex sync.Mutex
+var single *Singletion
+
+func GetSingle() *Singletion {
+    mutex.Lock()     <-------加锁
+    defer mutex.Unlock()     <--------解锁
+    if single == nil {    <------判断single是否存在
+        single = new(Singletion)
+    }
+    return single
+}
+
+缺点：饿汉式不支持延迟加载；懒汉式有性能问题，不支持高并发。
+
+#双重检测
+type Singletion struct {}
+
+var mutex sync.Mutex
+var single *Singletion
+
+func GetSingle() *Singletion {
+    if single == nil { <-------第一个检查是为了避免频繁加锁问题：前面的请求创建好实例后，后面的请求就不需要再加锁处理了
+        mutex.Lock() 
+        defer mutex.Unlock() 
+        if single == nil {<--------第二个检查是为了处理锁竞争的情况：如果来个两个线程同时发现single为空，于是开始抢锁，由于前面抢锁成功的线程已经初始化完成示例，所以后面获得锁的线程在判断single不为空后就可以退出了；
+            single = new(Singletion)
+        }    
+    }
+    return single
+}
+// Go语言中的sync包中提供了双重检测，一个针对只执行一次场景的解决方案：sync.Once
+package singleton
+
+import(
+    "sync"
+)
+
+type  singleton  struct{}  // 定义一个名为singleton的结构体（go中的结构体相当于类）
+
+  
+var  instance  *singleton // 实例化一个名为instance的对象（对象可称为实例）；一个类只有一个对象--单例
+var  once  sync.Once   // 通过使用sync.Once 包可以实现线程安全的单例模式
+
+func GetInstance()*singleton{
+    once.Do (func(){  // <----这里使用sync.Once里的Do方法，让后面的语句只执行一次
+        instance=&singleton{}
+    })
+    returninstance
+}

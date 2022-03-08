@@ -1,0 +1,30 @@
+策略模式 （对象行为模式）
+对象有某个行为，但在不同的场景中，该行为有不同的实现算法
+// 实现一个上下文的类
+type Context struct{
+          Strategy
+}
+// 抽象的策略
+type Strategy interface{
+         Do()
+}
+// 实现具体的策略：策略1
+type Strategy1 struct{
+}
+func (s1 *Strategy1) Do(){
+   fmt.Println("执行策略1")
+}
+// 实现具体的策略：策略2
+type Strategy2 struct{
+}
+func (s2 *Strategy2) Do(){
+   fmt.Println("执行策略2")
+}
+// 调用测试
+context :=Context{}
+Strategy1 := &Strategy1{}
+context.Strategy = Strategy1 
+context.Do()
+Strategy2 := &Strategy2{}
+context.Strategy = Strategy2
+context.Do()
