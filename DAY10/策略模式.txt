@@ -2,14 +2,14 @@
 对象有某个行为，但在不同的场景中，该行为有不同的实现算法
 // 实现一个上下文的类
 type Context struct{
-          Strategy
+          Strategy     <-------这个类继承了接口
 }
 // 抽象的策略
 type Strategy interface{
-         Do()
+         Do()            <-------有多个类是该接口类型
 }
 // 实现具体的策略：策略1
-type Strategy1 struct{
+type Strategy1 struct{          
 }
 func (s1 *Strategy1) Do(){
    fmt.Println("执行策略1")
@@ -21,10 +21,11 @@ func (s2 *Strategy2) Do(){
    fmt.Println("执行策略2")
 }
 // 调用测试
-context :=Context{}
-Strategy1 := &Strategy1{}
-context.Strategy = Strategy1 
-context.Do()
-Strategy2 := &Strategy2{}
-context.Strategy = Strategy2
-context.Do()
+context :=Context{}               <-----------实例化继承接口的对象
+
+Strategy1 := &Strategy1{}      <-----------实例化对象1
+context.Strategy = Strategy1 <-----------实例化继承接口的对象指向对象1
+context.Do()                          <-----------继承接口的对象调用对象1的方法
+Strategy2 := &Strategy2{}      <-----------实例化对象2
+context.Strategy = Strategy2 <-----------实例化继承接口的对象指向对象2
+context.Do()                          <-----------继承接口的对象调用对象2的方法
