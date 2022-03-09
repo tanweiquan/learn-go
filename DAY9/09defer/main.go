@@ -15,6 +15,7 @@ func f1(x string, a, b int) int {
 }
 
 // defer 是后进先出，panic 需要等defer 结束后才会向上传递。
+// 即如果发生painc，崩溃前会执行完全部defer登记的代码
 func defer_call() {
 	defer func() { fmt.Println("打印前") }()
 	defer func() { fmt.Println("打印中") }()
