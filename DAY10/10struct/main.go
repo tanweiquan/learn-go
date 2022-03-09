@@ -47,4 +47,10 @@ func main() {
 	s.y = 26
 	fmt.Println(s)        //{哈哈哈 26}
 	fmt.Printf("%T\n", s) //类型：struct { x string; y int }
+	// 匿名结构体的另一种形式
+	ax := struct {
+		m string
+		n int
+	}{m: "hello", n: 26}
+	fmt.Println(ax)
 }
