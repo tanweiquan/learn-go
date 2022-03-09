@@ -13,7 +13,16 @@ func f1(x string, a, b int) int {
 	fmt.Println(x, a, b, tmp)
 	return tmp
 }
+
+// defer 是后进先出，panic 需要等defer 结束后才会向上传递。
+func defer_call() {
+	defer func() { fmt.Println("打印前") }()
+	defer func() { fmt.Println("打印中") }()
+	defer func() { fmt.Println("打印后") }()
+	panic("触发异常")
+}
 func main() {
+	defer_call() //打印后->打印中->打印前->触发异常
 	//fmt.Println("start")
 	//下面打印结果是4，5，3，2，1。也就是说defer延迟处理语句时，defer跟随的语句，在其他语句执行完后再被执行
 	//defer fmt.Println(1) //最后被执行
