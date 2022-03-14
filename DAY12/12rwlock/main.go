@@ -17,6 +17,11 @@ import (
 当一个goroutine获取读锁之后，其他的goroutine如果是获取读锁会继续获得锁，如果是获取写锁就会等待；
 当一个goroutine获取写锁之后，其他的goroutine无论是获取读锁还是写锁都会等待。 */
 
+/*
+基本遵循两大原则：
+1、可以随便读，多个goroutine同时读
+2、写的时候，啥也不能干。不能读也不能写
+*/
 var (
 	x  int64
 	wg sync.WaitGroup
