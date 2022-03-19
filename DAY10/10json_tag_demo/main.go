@@ -6,24 +6,48 @@ import (
 )
 
 // tag是设置标签
-// 有时候会在字段定义后面带上一个字符串(tag)。类似于如下
+// `key01:"value01" key02:"value02" key03:"value03"`
+// 有时候会在字段定义后面带上一个字符串(tag),给字段指定属性。
+/*  三种获取 field
+field := reflect.TypeOf(obj).FieldByName("Name")
+field := reflect.ValueOf(obj).Type().Field(i)  // i 表示第几个字段
+field := reflect.ValueOf(&obj).Elem().Type().Field(i)  // i 表示第几个字段
 
-type T struct {
-	f1     string "f one"
-	f2     string
-	f3     string `f three`
-	f4, f5 int64  `f four and five` // field定义时候两个名字公用一个属性
+// 获取 Tag
+tag := field.Tag
+
+// 获取键值对
+labelValue := tag.Get("label")
+labelValue,ok := tag.Lookup("label") */
+type Person struct {
+	Name   string `key:"Name is: "`
+	Age    int    `key:"Age is: "`
+	Gender string `key:"Gender is: " default:"unknown"`
 }
 
-// Tag在运行时可以通过反射:reflection包来读取
 func main() {
-	t := reflect.TypeOf(T{})
-	f1, _ := t.FieldByName("f1")
-	fmt.Println(f1.Tag) // f one
-	f2, _ := t.FieldByName("f2")
-	fmt.Println(f2.Tag) //
-	f4, _ := t.FieldByName("f4")
-	fmt.Println(f4.Tag) // f four and five
-	f5, _ := t.FieldByName("f5")
-	fmt.Println(f5.Tag) // f four and five
+	person := Person{
+		Name: "MING",
+		Age:  29,
+	}
+	// 取 Value
+	v := reflect.ValueOf(person)
+	// 解析字段
+	for i := 0; i < v.NumField(); i++ {
+
+		// 取tag
+		field := v.Type().Field(i)
+		tag := field.Tag
+
+		// 解析label 和 default
+		label := tag.Get("key")
+		defaultValue := tag.Get("default")
+
+		value := fmt.Sprintf("%v", v.Field(i))
+		if value == "" {
+			// 如果没有指定值，则用默认值替代
+			value = defaultValue
+		}
+		fmt.Println(label + value)
+	}
 }
