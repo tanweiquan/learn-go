@@ -7,7 +7,7 @@ import (
 
 // tag设置标签/属性
 // x  type `key01:"value01" key02:"value02" key03:"value03"`
-// 相当于程序一找到字段就换成对应的key对应的value
+// 相当于程序一找到字段就将字段换成对应的key对应的value
 
 // 有时候会在字段定义后面带上一个字符串(tag),给字段指定属性。
 /*  三种获取 field
