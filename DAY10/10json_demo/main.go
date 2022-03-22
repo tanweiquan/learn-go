@@ -43,12 +43,31 @@ type person struct {
 }
 
 func main() {
-	// json数组：str := `{"zhoulin","周琳","26",26}`
-	// json对象：str := `{"name"："周琳","age"：26}`
-	/* json对象首先是字符串，它遵循字符串的操作规则，并且里面的key是有双引号的。
-	   而go对象首先它是go语言的对象，它则遵循的go本身语言的操作规则 */
+	/*
+		Json是一种异常简单易懂的数据格式，关于json的规定，仅仅如下而已：
+		1、并列的数据之间用逗号（", "）分隔。
+		2、映射用冒号（": "）表示。
+		3、并列数据的集合（数组）用方括号("[]")表示。
+		4、映射的集合（对象）用大括号（"{}"）表示。
+		5、键值对的键要用双引号包裹起来（"key"）
+	*/
+	/*
+	    json数组：str := `[111,"aaa",123,"xxy","ccc",26]`
+	   	json对象：str := `{"name"："周琳","age"：26}`
+	   	json对象里的元素是数组：
+	   	str := `{"name"："周琳","hello"：[123,"sdx","sdxc",1234]}`
+	*/
+	/*
+		json对象首先是字符串，它遵循字符串的操作规则，并且里面的key是有双引号的。
+		而go对象首先它是go语言的对象，它则遵循的go本身语言的操作规则
+	*/
 	str := `{"name":"周琳","age":26}` //json对象
 	var p person                    //这里的person的type name:person,kind name:struct
 	_ = json.Unmarshal([]byte(str), &p)
 	fmt.Println(p.Name, p.Age)
+
+	stx := `[124,1234,6789,"xsg",1246]` //json数组
+	var x interface{}
+	_ = json.Unmarshal([]byte(stx), &x)
+	fmt.Println(x)
 }
